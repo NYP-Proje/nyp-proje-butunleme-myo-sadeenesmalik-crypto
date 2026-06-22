@@ -102,7 +102,7 @@ public class Main {
             File faturaDosyasi = new File(FATURA_DOSYASI);
             aboneDosyasi.createNewFile();
             faturaDosyasi.createNewFile();
-        } catch (IOException e) {
+         } catch (IOException e) {
             System.out.println("Dosya oluşturulurken hata çıktı.");
 }
 }
