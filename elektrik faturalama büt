@@ -1,0 +1,29 @@
+import java.io.*;
+import java.util.Scanner;
+
+public class Main {
+
+    private static final String ABONE_DOSYASI = "aboneler.txt";
+    private static final String FATURA_DOSYASI = "faturalar.txt";
+
+
+    private static final double BIRIM_FIYAT = 2.5;
+
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+
+
+        dosyalariOlustur();
+
+        while (true) {
+            System.out.println("--- DOSYA TABANLI ELEKTRİK FATURA SİSTEMİ ---");
+            System.out.println("1. Yeni Abone Ekle");
+            System.out.println("2. Fatura Kes (Sabit Fiyat)");
+            System.out.println("3. Kayıtlı Aboneleri Listele");
+            System.out.println("4. Çıkış");
+            System.out.print("Seçiminiz: ");
+            int secim = scanner.nextInt();
+            scanner.nextLine();
+}
+}
+}
