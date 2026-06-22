@@ -24,6 +24,86 @@ public class Main {
             System.out.print("Seçiminiz: ");
             int secim = scanner.nextInt();
             scanner.nextLine();
+ if (secim == 1) {
+
+                System.out.print("Abone ID (Örn: 101): ");
+                String id = scanner.nextLine();
+                System.out.print("Abone Adı Soyadı: ");
+                String isim = scanner.nextLine();
+
+
+                try (FileWriter fw = new FileWriter(ABONE_DOSYASI, true);
+                     BufferedWriter bw = new BufferedWriter(fw);
+                     PrintWriter out = new PrintWriter(bw)) {
+
+                    out.println(id + "," + isim);
+                    System.out.println(" Abone " + ABONE_DOSYASI + " dosyasına kaydedildi.");
+                } catch (IOException e) {
+                    System.out.println(" Dosya yazma hatası: " + e.getMessage());
+                }
+
+            } else if (secim == 2) {
+
+                System.out.print("Abone ID: ");
+                String aboneId = scanner.nextLine();
+                System.out.print("Aylık Tüketim (kWh): ");
+                double tuketim = scanner.nextDouble();
+
+
+                double toplamTutar = tuketim * BIRIM_FIYAT;
+
+
+                try (FileWriter fw = new FileWriter(FATURA_DOSYASI, true);
+                     BufferedWriter bw = new BufferedWriter(fw);
+                     PrintWriter out = new PrintWriter(bw)) {
+
+                    out.println(aboneId + "," + tuketim + "," + toplamTutar);
+
+                    System.out.println("--- FATURA OLUŞTURULDU VE DOSYAYA YAZILDI ---");
+                    System.out.println("Abone ID: " + aboneId);
+                    System.out.println("Tüketim: " + tuketim + " kWh");
+                    System.out.println("Toplam Tutar: " + toplamTutar + " TL");
+                    System.out.println("--------------------------------------------");
+                } catch (IOException e) {
+                    System.out.println(" Fatura kaydedilirken hata: " + e.getMessage());
+                }
+
+            } else if (secim == 3) {
+
+                System.out.println("\n--- KAYITLI ABONELER ---");
+                try (BufferedReader br = new BufferedReader(new FileReader(ABONE_DOSYASI))) {
+                    String satir;
+                    boolean kayitVarMi = false;
+                    while ((satir = br.readLine()) != null) {
+                        String[] parcalar = satir.split(",");
+                        System.out.println("ID: " + parcalar[0] + " | İsim: " + parcalar[1]);
+                        kayitVarMi = true;
+                    }
+                    if (!kayitVarMi) System.out.println("Sistemde henüz kayıtlı abone yok.");
+                } catch (IOException e) {
+                    System.out.println(" Dosya okuma hatası: " + e.getMessage());
+                }
+                System.out.println("------------------------");
+
+            } else if (secim == 4) {
+                System.out.println("Sistem kapatılıyor. Verileriniz güvende!");
+                break;
+            } else {
+                System.out.println("Geçersiz seçim!");
+            }
+        }
+        scanner.close();
+    }
+
+
+    private static void dosyalariOlustur() {
+        try {
+            File aboneDosyasi = new File(ABONE_DOSYASI);
+            File faturaDosyasi = new File(FATURA_DOSYASI);
+            aboneDosyasi.createNewFile();
+            faturaDosyasi.createNewFile();
+        } catch (IOException e) {
+            System.out.println("Dosya oluşturulurken hata çıktı.");
 }
 }
 }
