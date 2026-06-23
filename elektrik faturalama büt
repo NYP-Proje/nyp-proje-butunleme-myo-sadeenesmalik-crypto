@@ -2,7 +2,7 @@ import java.io.*;
 import java.util.Scanner;
 
 public class Main {
-    // Verilerin kaydedileceği metin dosyalarının isimleri
+    
     private static final String ABONE_DOSYASI = "aboneler.txt";
     private static final String FATURA_DOSYASI = "faturalar.txt";
     
@@ -12,7 +12,7 @@ public class Main {
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
 
-        // Program başlarken gerekli dosyalar yoksa otomatik oluşturulur
+        
         dosyalariOlustur();
 
         while (true) {
@@ -64,7 +64,7 @@ public class Main {
                     System.out.println("  Abone kontrolü yapılırken dosya hatası: " + e.getMessage());
                 }
 
-                // 
+                
                 if (!aboneBulundu) {
                     System.out.println("  HATA: '" + aboneId + "' ID'li bir abone bulunamadı! Önce aboneyi kaydedin.");
                 } else {
@@ -119,7 +119,7 @@ public class Main {
         scanner.close();
     }
 
-    /
+    
     private static void dosyalariOlustur() {
         try {
             File aboneDosyasi = new File(ABONE_DOSYASI);
