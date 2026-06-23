@@ -1,7 +1,11 @@
+import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.*;
-import java.util.Scanner;
 
-public class Main {
+public class Main extends JFrame {
     
     private static final String ABONE_DOSYASI = "aboneler.txt";
     private static final String FATURA_DOSYASI = "faturalar.txt";
@@ -9,114 +13,197 @@ public class Main {
     
     private static final double BIRIM_FIYAT = 2.5;
 
-    public static void main(String[] args) {
-        Scanner scanner = new Scanner(System.in);
+    
+    private JTabbedPane tabbedPane;
+    private DefaultTableModel tableModel;
+
+    public Main() {
+        
+        setTitle("Elektrik Fatura Sistemi");
+        setSize(550, 450);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLocationRelativeTo(null); 
 
         
         dosyalariOlustur();
 
-        while (true) {
-            System.out.println("\n--- DOSYA TABANLI ELEKTRİK FATURA SİSTEMİ ---");
-            System.out.println("1. Yeni Abone Ekle");
-            System.out.println("2. Fatura Kes (Sabit Fiyat)");
-            System.out.println("3. Kayıtlı Aboneleri Listele");
-            System.out.println("4. Çıkış");
-            System.out.print("Seçiminiz: ");
-            int secim = scanner.nextInt();
-            scanner.nextLine(); 
+        
+        tabbedPane = new JTabbedPane();
+        
+        tabbedPane.addTab("Yeni Abone Ekle", aboneEklePaneli());
+        tabbedPane.addTab("Fatura Kes", faturaKesPaneli());
+        tabbedPane.addTab("Aboneleri Listele", aboneListelePaneli());
 
-            if (secim == 1) {
-                
-                System.out.print("Abone ID (Örn: 101): ");
-                String id = scanner.nextLine();
-                System.out.print("Abone Adı Soyadı: ");
-                String isim = scanner.nextLine();
+        add(tabbedPane);
+    }
 
+
+    private JPanel aboneEklePaneli() {
+        JPanel panel = new JPanel(new GridBagLayout());
+        panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(10, 10, 10, 10);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+
+        JLabel lblId = new JLabel("Abone ID (Örn: 101):");
+        JTextField txtId = new JTextField(15);
+        JLabel lblIsim = new JLabel("Abone Adı Soyadı:");
+        JTextField txtIsim = new JTextField(15);
+        JButton btnKaydet = new JButton("Abone Kaydet");
+        btnKaydet.setBackground(new Color(46, 204, 113));
+        btnKaydet.setForeground(Color.WHITE);
+
+        gbc.gridx = 0; gbc.gridy = 0; panel.add(lblId, gbc);
+        gbc.gridx = 1; panel.add(txtId, gbc);
+        gbc.gridx = 0; gbc.gridy = 1; panel.add(lblIsim, gbc);
+        gbc.gridx = 1; panel.add(txtIsim, gbc);
+        gbc.gridx = 0; gbc.gridy = 2; gbc.gridwidth = 2; panel.add(btnKaydet, gbc);
+
+        btnKaydet.addActionListener(e -> {
+            String id = txtId.getText().trim();
+            String isim = txtIsim.getText().trim();
+
+            if (id.isEmpty() || isim.isEmpty()) {
+                JOptionPane.showMessageDialog(panel, "Lütfen tüm alanları doldurun!", "Hata", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            try (FileWriter fw = new FileWriter(ABONE_DOSYASI, true);
+                 BufferedWriter bw = new BufferedWriter(fw);
+                 PrintWriter out = new PrintWriter(bw)) {
                 
-                try (FileWriter fw = new FileWriter(ABONE_DOSYASI, true);
+                out.println(id + "," + isim);
+                JOptionPane.showMessageDialog(panel, "Abone başarıyla kaydedildi!", "Başarılı", JOptionPane.INFORMATION_MESSAGE);
+                txtId.setText("");
+                txtIsim.setText("");
+                tablolariGuncelle(); // Listeyi otomatik yenile
+            } catch (IOException ex) {
+                JOptionPane.showMessageDialog(panel, "Dosya yazma hatası: " + ex.getMessage(), "Hata", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+
+        return panel;
+    }
+
+    
+    private JPanel faturaKesPaneli() {
+        JPanel panel = new JPanel(new GridBagLayout());
+        panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(10, 10, 10, 10);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+
+        JLabel lblId = new JLabel("Abone ID:");
+        JTextField txtId = new JTextField(15);
+        JLabel lblTuketim = new JLabel("Aylık Tüketim (kWh):");
+        JTextField txtTuketim = new JTextField(15);
+        JButton btnHesapla = new JButton("Fatura Oluştur");
+        btnHesapla.setBackground(new Color(52, 152, 219));
+        btnHesapla.setForeground(Color.WHITE);
+
+        gbc.gridx = 0; gbc.gridy = 0; panel.add(lblId, gbc);
+        gbc.gridx = 1; panel.add(txtId, gbc);
+        gbc.gridx = 0; gbc.gridy = 1; panel.add(lblTuketim, gbc);
+        gbc.gridx = 1; panel.add(txtTuketim, gbc);
+        gbc.gridx = 0; gbc.gridy = 2; gbc.gridwidth = 2; panel.add(btnHesapla, gbc);
+
+        btnHesapla.addActionListener(e -> {
+            String aboneId = txtId.getText().trim();
+            String tuketimStr = txtTuketim.getText().trim();
+
+            if (aboneId.isEmpty() || tuketimStr.isEmpty()) {
+                JOptionPane.showMessageDialog(panel, "Lütfen tüm alanları doldurun!", "Hata", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            
+            boolean aboneBulundu = false;
+            try (BufferedReader br = new BufferedReader(new FileReader(ABONE_DOSYASI))) {
+                String satir;
+                while ((satir = br.readLine()) != null) {
+                    String[] parcalar = satir.split(",");
+                    if (parcalar[0].equals(aboneId)) {
+                        aboneBulundu = true;
+                        break;
+                    }
+                }
+            } catch (IOException ex) {
+                JOptionPane.showMessageDialog(panel, "Dosya okuma hatası!", "Hata", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            if (!aboneBulundu) {
+                JOptionPane.showMessageDialog(panel, "'" + aboneId + "' ID'li bir abone bulunamadı! Önce aboneyi kaydedin.", "Hata", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            
+            try {
+                double tuketim = Double.parseDouble(tuketimStr);
+                double toplamTutar = tuketim * BIRIM_FIYAT;
+
+                try (FileWriter fw = new FileWriter(FATURA_DOSYASI, true);
                      BufferedWriter bw = new BufferedWriter(fw);
                      PrintWriter out = new PrintWriter(bw)) {
                     
-                    out.println(id + "," + isim);
-                    System.out.println("  Abone " + ABONE_DOSYASI + " dosyasına kaydedildi.");
-                } catch (IOException e) {
-                    System.out.println("  Dosya yazma hatası: " + e.getMessage());
-                }
+                    out.println(aboneId + "," + tuketim + "," + toplamTutar);
 
-            } else if (secim == 2) {
-            
-                System.out.print("Abone ID: ");
-                String aboneId = scanner.nextLine();
-
-                
-                boolean aboneBulundu = false;
-                try (BufferedReader br = new BufferedReader(new FileReader(ABONE_DOSYASI))) {
-                    String satir;
-                    while ((satir = br.readLine()) != null) {
-                        String[] parcalar = satir.split(",");
-                        
-                        if (parcalar[0].equals(aboneId)) {
-                            aboneBulundu = true;
-                            break; 
-                        }
-                    }
-                } catch (IOException e) {
-                    System.out.println("  Abone kontrolü yapılırken dosya hatası: " + e.getMessage());
-                }
-
-                
-                if (!aboneBulundu) {
-                    System.out.println("  HATA: '" + aboneId + "' ID'li bir abone bulunamadı! Önce aboneyi kaydedin.");
-                } else {
+                    String mesaj = String.format("--- FATURA OLUŞTURULDU ---Abone ID: %sTüketim: %.2f kWhToplam Tutar: %.2f TL", 
+                                    aboneId, tuketim, toplamTutar);
+                    JOptionPane.showMessageDialog(panel, mesaj, "Fatura Bilgisi", JOptionPane.INFORMATION_MESSAGE);
                     
-                    System.out.print("Aylık Tüketim (kWh): ");
-                    double tuketim = scanner.nextDouble();
-
-                    
-                    double toplamTutar = tuketim * BIRIM_FIYAT;
-
-                    
-                    try (FileWriter fw = new FileWriter(FATURA_DOSYASI, true);
-                         BufferedWriter bw = new BufferedWriter(fw);
-                         PrintWriter out = new PrintWriter(bw)) {
-                        
-                        out.println(aboneId + "," + tuketim + "," + toplamTutar);
-
-                        System.out.println("--- FATURA OLUŞTURULDU VE DOSYAYA YAZILDI ---");
-                        System.out.println("Abone ID: " + aboneId);
-                        System.out.println("Tüketim: " + tuketim + " kWh");
-                        System.out.println("Toplam Tutar: " + toplamTutar + " TL");
-                        System.out.println("--------------------------------------------");
-                    } catch (IOException e) {
-                        System.out.println("  Fatura kaydedilirken hata: " + e.getMessage());
-                    }
+                    txtId.setText("");
+                    txtTuketim.setText("");
                 }
-
-            } else if (secim == 3) {
-                
-                System.out.println("--- KAYITLI ABONELER ---");
-                try (BufferedReader br = new BufferedReader(new FileReader(ABONE_DOSYASI))) {
-                    String satir;
-                    boolean kayitVarMi = false;
-                    while ((satir = br.readLine()) != null) {
-                        String[] parcalar = satir.split(",");
-                        System.out.println("ID: " + parcalar[0] + " | İsim: " + parcalar[1]);
-                        kayitVarMi = true;
-                    }
-                    if (!kayitVarMi) System.out.println("Sistemde henüz kayıtlı abone yok.");
-                } catch (IOException e) {
-                    System.out.println("  Dosya okuma hatası: " + e.getMessage());
-                }
-                System.out.println("------------------------");
-
-            } else if (secim == 4) {
-                System.out.println("Sistem kapatılıyor. Verileriniz güvende!");
-                break;
-            } else {
-                System.out.println("Geçersiz seçim!");
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(panel, "Lütfen tüketim miktarını sayısal bir değer girin!", "Hata", JOptionPane.ERROR_MESSAGE);
+            } catch (IOException ex) {
+                JOptionPane.showMessageDialog(panel, "Fatura kaydedilirken hata oluştu!", "Hata", JOptionPane.ERROR_MESSAGE);
             }
+        });
+
+        return panel;
+    }
+
+    
+    private JPanel aboneListelePaneli() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+        
+        String[] kolonlar = {"Abone ID", "Adı Soyadı"};
+        tableModel = new DefaultTableModel(kolonlar, 0);
+        JTable tablo = new JTable(tableModel);
+        JScrollPane scrollPane = new JScrollPane(tablo);
+
+        JButton btnYenile = new JButton("Listeyi Yenile");
+        btnYenile.setBackground(new Color(155, 89, 182));
+        btnYenile.setForeground(Color.WHITE);
+        btnYenile.addActionListener(e -> tablolariGuncelle());
+
+        panel.add(scrollPane, BorderLayout.CENTER);
+        panel.add(btnYenile, BorderLayout.SOUTH);
+
+        
+        tablolariGuncelle();
+
+        return panel;
+    }
+
+
+    private void tablolariGuncelle() {
+        tableModel.setRowCount(0); 
+        try (BufferedReader br = new BufferedReader(new FileReader(ABONE_DOSYASI))) {
+            String satir;
+            while ((satir = br.readLine()) != null) {
+                String[] parcalar = satir.split(",");
+                if (parcalar.length == 2) {
+                    tableModel.addRow(parcalar);
+                }
+            }
+        } catch (IOException e) {
+            
         }
-        scanner.close();
     }
 
     
@@ -124,10 +211,28 @@ public class Main {
         try {
             File aboneDosyasi = new File(ABONE_DOSYASI);
             File faturaDosyasi = new File(FATURA_DOSYASI);
-            aboneDosyasi.createNewFile();
-            faturaDosyasi.createNewFile();
+            if (!aboneDosyasi.exists()) aboneDosyasi.createNewFile();
+            if (!faturaDosyasi.exists()) faturaDosyasi.createNewFile();
         } catch (IOException e) {
             System.out.println("Dosya oluşturulurken hata çıktı.");
         }
     }
+
+    public static void main(String[] args) {
+        
+        try {
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        
+        SwingUtilities.invokeLater(() -> {
+            Main uygulama = new Main();
+            uygulama.setVisible(true);
+        });
+    }
 }
+
+                
+                
